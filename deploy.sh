@@ -19,7 +19,7 @@ if confirm "Установить базовый набор программ? (y/
     apt update && apt install -y \
     docker sudo docker-compose mc \
     tmux ufw htop ca-certificates \
-    curl gnupg lsb-release wget
+    curl gnupg lsb-release wget git
     ufw status
     ufw enable
     ufw allow ssh
@@ -48,26 +48,9 @@ if confirm "Установить базовый набор программ? (y/
     if confirm "Установить traefik? (y/n or enter for no)"; then
         read -p "Введите  порт для traefik: " tport
         ufw allow $tport && ufw status
-        mkdir traefik && cd traefik
-        echo "version: '3'"  > docker-compose.yml
-        echo "services:" >> docker-compose.yml
-        echo "  reverse-proxy:" >> docker-compose.yml
-        echo "    # The official v2 Traefik docker image" >> docker-compose.yml
-        echo "    image: traefik:v2.8" >> docker-compose.yml
-        echo "    # Enables the web UI and tells Traefik to listen to docker" >> docker-compose.yml
-        echo "    command: --api.insecure=true --providers.docker" >> docker-compose.yml
-        echo "    ports:" >> docker-compose.yml
-        echo "      # The HTTP port" >> docker-compose.yml
-        echo '      - "80:80"' >> docker-compose.yml
-        echo "      # The Web UI (enabled by --api.insecure=true)" >> docker-compose.yml
-        echo '      - "8080:8080"' >> docker-compose.yml
-        echo "    volumes:" >> docker-compose.yml
-        echo "      # So that Traefik can listen to the Docker events" >> docker-compose.yml
-        echo "      - /var/run/docker.sock:/var/run/docker.sock" >> docker-compose.yml
-        sed -i "s!80:80!$tport:80!1" portainer-agent-stack.yml
-        echo "#!/bin/bash" >  start.sh
-        echo "docker-compose up -d reverse-proxy" >>  start.sh
-        chmod +x  start.sh && ./start.sh
+        git clone https://github.com/codesshaman/docker_traefik.git
+        cd docker_traefik
+        chmod +x start.sh && ./start.sh
         cd ..
     else
         echo "Пропускаю установку traefik!"
