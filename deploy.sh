@@ -30,15 +30,24 @@ if confirm "Установить базовый набор программ? (y/
     ufw status
     echo "Устанавливаю portainer"
     docker volume create portainer_data
-
     echo "Устанавливаю ctop"
     curl -fsSL https://azlux.fr/repo.gpg.key | gpg --dearmor -o /usr/share/keyrings/azlux-archive-keyring.gpg
     echo \
         "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/azlux-archive-keyring.gpg] http://packages.azlux.fr/debian \
         $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/azlux.list >/dev/null
     apt update && apt install docker-ctop
+    chmod +x /usr/bin/ctop
 else
     echo "Выход."
+fi
+
+# Проверяем существование папки проектов 
+# и создаём её в случае отсутствия
+if ls -l /var/projects >/dev/null 2>&1; then
+    echo "Каталог /var/projects существует"
+else
+    mkdir /var/projects
+    echo "Каталог /var/projects успешно создан"
 fi
 
 # Функция создания нового пользователя:
@@ -61,9 +70,6 @@ else
 
     # Устанавливаю пароль
     echo "$user:$pass" | chpasswd
-    # Создаю домашнюю директорию
-    mkdir /home/$user
-    chown -R $user:$user /home/$user
     # Создаю рабочую директорию
     mkdir /var/projects/$user
     chown -R $user:$user /var/projects/$user
