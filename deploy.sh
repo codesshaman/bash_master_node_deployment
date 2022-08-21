@@ -61,7 +61,7 @@ fi
 # Функция создания нового пользователя:
 read -p "Введите имя нового пользователя: " user
 if id -u "$user" >/dev/null 2>&1; then
-    echo "Пользователь $user уже существует. Выберите другое имя пользователя."
+    echo "Пользователь $user уже существует. Выберите другое имя пользователя"
 else
     echo "Создаю пользователя с именем $user"
     read -p "Введите пароль нового пользователя:" pass
@@ -75,7 +75,6 @@ else
     else
         echo "Отменено"
     fi
-
     # Устанавливаю пароль
     echo "$user:$pass" | chpasswd
     # Создаю рабочую директорию
@@ -92,4 +91,34 @@ else
     # Создаю элиас для ctop
     echo 'alias ctop="/usr/bin/ctop"' >> /home/$user/.bashrc
     echo "Пользователь $user успешно создан!"
+    if confirm "Установить traefik от имени пользователя $user? (y/n or enter for no)"; then
+        read -p "Введите  порт для traefik: " tport
+        ufw allow $tport && ufw status
+        mkdir /home/$user/traefik && chown -R $user:$user /home/$user/traefik
+        echo "version: '3'" > /home/$user/traefik/docker-compose.yml
+        echo "services:" >> /home/$user/traefik/docker-compose.yml
+        echo "  reverse-proxy:" >> /home/$user/traefik/docker-compose.yml
+        echo "    # The official v2 Traefik docker image" >> /home/$user/traefik/docker-compose.yml
+        echo "    image: traefik:v2.8" >> /home/$user/traefik/docker-compose.yml
+        echo "    # Enables the web UI and tells Traefik to listen to docker" >> /home/$user/traefik/docker-compose.yml
+        echo "    command: --api.insecure=true --providers.docker" >> /home/$user/traefik/docker-compose.yml
+        echo "    ports:" >> /home/$user/traefik/docker-compose.yml
+        echo "      # The HTTP port" >> /home/$user/traefik/docker-compose.yml
+        echo '      - "80:80"' >> /home/$user/traefik/docker-compose.yml
+        echo "      # The Web UI (enabled by --api.insecure=true)" >> /home/$user/traefik/docker-compose.yml
+        echo '      - "8080:8080"' >> /home/$user/traefik/docker-compose.yml
+        echo "    volumes:" >> /home/$user/traefik/docker-compose.yml
+        echo "      # So that Traefik can listen to the Docker events" >> /home/$user/traefik/docker-compose.yml
+        echo "      - /var/run/docker.sock:/var/run/docker.sock" >> /home/$user/traefik/docker-compose.yml
+        chown -R $user:$user /home/$user/traefik/docker-compose.yml
+        echo "#!/bin/bash" > /home/$user/traefik/start.sh
+        echo "docker-compose up -d reverse-proxy" >> /home/$user/traefik/start.sh
+        chown -R $user:$user /home/$user/traefik/start.sh
+        chmod +x /home/$user/traefik/start.sh
+        cd /home/$user/traefik/
+        su -l $user -c /home/$user/traefik/start.sh
+        cd ~/
+    else
+        echo "Пропускаю установку traefik!"
+    fi
 fi
