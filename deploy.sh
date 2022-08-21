@@ -45,6 +45,33 @@ if confirm "Установить базовый набор программ? (y/
         $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/azlux.list >/dev/null
     apt update && apt install docker-ctop
     chmod +x /usr/bin/ctop
+    if confirm "Установить traefik? (y/n or enter for no)"; then
+        read -p "Введите  порт для traefik: " tport
+        ufw allow $tport && ufw status
+        mkdir traefik && cd traefik
+        echo "version: '3'"  > docker-compose.yml
+        echo "services:" >> docker-compose.yml
+        echo "  reverse-proxy:" >> docker-compose.yml
+        echo "    # The official v2 Traefik docker image" >> docker-compose.yml
+        echo "    image: traefik:v2.8" >> docker-compose.yml
+        echo "    # Enables the web UI and tells Traefik to listen to docker" >> docker-compose.yml
+        echo "    command: --api.insecure=true --providers.docker" >> docker-compose.yml
+        echo "    ports:" >> docker-compose.yml
+        echo "      # The HTTP port" >> docker-compose.yml
+        echo '      - "80:80"' >> docker-compose.yml
+        echo "      # The Web UI (enabled by --api.insecure=true)" >> docker-compose.yml
+        echo '      - "8080:8080"' >> docker-compose.yml
+        echo "    volumes:" >> docker-compose.yml
+        echo "      # So that Traefik can listen to the Docker events" >> docker-compose.yml
+        echo "      - /var/run/docker.sock:/var/run/docker.sock" >> docker-compose.yml
+        sed -i "s!80:80!$tport:80!1" portainer-agent-stack.yml
+        echo "#!/bin/bash" >  start.sh
+        echo "docker-compose up -d reverse-proxy" >>  start.sh
+        chmod +x  start.sh && ./start.sh
+        cd ..
+    else
+        echo "Пропускаю установку traefik!"
+    fi
 else
     echo "Выход."
 fi
@@ -91,34 +118,4 @@ else
     # Создаю элиас для ctop
     echo 'alias ctop="/usr/bin/ctop"' >> /home/$user/.bashrc
     echo "Пользователь $user успешно создан!"
-    if confirm "Установить traefik от имени пользователя $user? (y/n or enter for no)"; then
-        read -p "Введите  порт для traefik: " tport
-        ufw allow $tport && ufw status
-        mkdir /home/$user/traefik && chown -R $user:$user /home/$user/traefik
-        echo "version: '3'" > /home/$user/traefik/docker-compose.yml
-        echo "services:" >> /home/$user/traefik/docker-compose.yml
-        echo "  reverse-proxy:" >> /home/$user/traefik/docker-compose.yml
-        echo "    # The official v2 Traefik docker image" >> /home/$user/traefik/docker-compose.yml
-        echo "    image: traefik:v2.8" >> /home/$user/traefik/docker-compose.yml
-        echo "    # Enables the web UI and tells Traefik to listen to docker" >> /home/$user/traefik/docker-compose.yml
-        echo "    command: --api.insecure=true --providers.docker" >> /home/$user/traefik/docker-compose.yml
-        echo "    ports:" >> /home/$user/traefik/docker-compose.yml
-        echo "      # The HTTP port" >> /home/$user/traefik/docker-compose.yml
-        echo '      - "80:80"' >> /home/$user/traefik/docker-compose.yml
-        echo "      # The Web UI (enabled by --api.insecure=true)" >> /home/$user/traefik/docker-compose.yml
-        echo '      - "8080:8080"' >> /home/$user/traefik/docker-compose.yml
-        echo "    volumes:" >> /home/$user/traefik/docker-compose.yml
-        echo "      # So that Traefik can listen to the Docker events" >> /home/$user/traefik/docker-compose.yml
-        echo "      - /var/run/docker.sock:/var/run/docker.sock" >> /home/$user/traefik/docker-compose.yml
-        chown -R $user:$user /home/$user/traefik/docker-compose.yml
-        echo "#!/bin/bash" > /home/$user/traefik/start.sh
-        echo "docker-compose up -d reverse-proxy" >> /home/$user/traefik/start.sh
-        chown -R $user:$user /home/$user/traefik/start.sh
-        chmod +x /home/$user/traefik/start.sh
-        cd /home/$user/traefik/
-        su -l $user -c /home/$user/traefik/start.sh
-        cd ~/
-    else
-        echo "Пропускаю установку traefik!"
-    fi
 fi
