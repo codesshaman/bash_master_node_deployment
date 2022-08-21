@@ -19,7 +19,7 @@ if confirm "Установить базовый набор программ? (y/
     apt update && apt install -y \
     docker sudo docker-compose mc \
     tmux ufw htop ca-certificates \
-    curl gnupg lsb-release
+    curl gnupg lsb-release wget
     ufw status
     ufw enable
     ufw allow ssh
@@ -28,8 +28,16 @@ if confirm "Установить базовый набор программ? (y/
     read -p "Введите порт для portainer:" port
     ufw allow $port
     ufw status
+    echo "Запускаю docker в режиме роя"
+    docker swarm init > swarm.txt && cat swarm.txt
     echo "Устанавливаю portainer"
     docker volume create portainer_data
+    mkdir portainer && cd portainer
+    curl -L https://downloads.portainer.io/ce2-14/portainer-agent-stack.yml -o portainer-agent-stack.yml
+    sed -i "s/9443:9443/$port:9443/g" portainer-agent-stack.yml
+    sed -i 's!      - "9000:9000"!#      - "9000:9000"!1' portainer-agent-stack.yml
+    sed -i 's!      - "8000:8000"!#      - "8000:8000"!1' portainer-agent-stack.yml
+    docker stack deploy -c portainer-agent-stack.yml portainer && cd ..
     echo "Устанавливаю ctop"
     curl -fsSL https://azlux.fr/repo.gpg.key | gpg --dearmor -o /usr/share/keyrings/azlux-archive-keyring.gpg
     echo \
