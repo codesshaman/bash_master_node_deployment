@@ -69,7 +69,7 @@ if confirm "Установить базовый набор программ? (y/
     chmod +x /usr/bin/ctop
     # Устанавливаю traefik
     if confirm "Установить traefik? (y/n or enter for no)"; then
-        read -p "Введите  порт для traefik: " tport
+        read -p "Введите  порт для traefik, отличный от уже открытого 443: " tport
         ufw allow $tport && ufw status
         git clone https://github.com/codesshaman/docker_traefik.git
         cd docker_traefik
