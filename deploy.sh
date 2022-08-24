@@ -19,7 +19,8 @@ if confirm "Установить базовый набор программ? (y/
     apt update && apt install -y \
     docker sudo docker-compose mc \
     tmux ufw htop ca-certificates \
-    curl gnupg lsb-release wget git
+    curl gnupg lsb-release wget git \
+    supervisor
     ufw status
     ufw enable
     # Если порт конфигурации не менялся,
