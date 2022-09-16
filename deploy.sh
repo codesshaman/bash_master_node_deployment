@@ -114,19 +114,46 @@ if confirm "Создать нового пользователя? (y/n or enter 
         fi
         # Устанавливаю пароль
         echo "$user:$pass" | chpasswd
+
         # Создаю рабочую директорию
         mkdir /var/projects/$user
         chown -R $user:$user /var/projects/$user
+
         # Создаю символьную ссылку из рабочей в домашнюю
         ln -s /var/projects/$user/ /home/$user/projects
+        chown -R $user:$user /var/projects/$user/
+
         # Создаю директорию для документов
         mkdir /home/$user/documents/
         chown -R $user:$user /home/$user/documents/
+
         # Создаю директорию для загрузок
         mkdir /home/$user/downloads/
         chown -R $user:$user /home/$user/downloads/
+
+        # Создаю директорию для загрузок
+        mkdir /home/$user/.tmux/
+        chown -R $user:$user /home/$user/.tmux/
+
         # Создаю элиас для ctop
         echo 'alias ctop="/usr/bin/ctop"' >> /home/$user/.bashrc
+
+        # Меняю расположение сессий  tmux
+        echo "export TMUX_TMPDIR=~/.tmux/tmp" >> /home/$user/.bashrc
+
+        # Создаю конфиг tmux-а
+        { echo 'set -g mouse on'; \
+          echo 'setw -g xterm-keys on'; \
+          echo 'tmux-session save'; \
+          echo 'tmux-session restore'; \
+        } | tee  /home/$user/.tmux/tmux.conf;
+
+        # Меняю расположение сессий  tmux
+        echo "export TMUX_TMPDIR=~/.tmux/tmp" >> /home/$user/.bashrc
+
+        # Подкидываю tmux-у конфиг-файл
+        tmux source-file /home/$user/.tmux/tmux.conf
+
         echo "Пользователь $user успешно создан!"
         # Запрещаю логин под root
         # Если логин под суперпользователем возможен,
